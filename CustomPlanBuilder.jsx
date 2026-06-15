@@ -4,9 +4,9 @@ import {
   Snackbar, Alert, Divider,
 } from '@mui/material';
 import { alpha } from '@mui/material/styles';
-import AppShell from '../_template/AppShell';
-import palette from '../_template/palettes/archera-palette';
-import { color, elevation } from '../_template/tokens';
+import AppShell from '@archera/design-system/AppShell';
+import palette from '@archera/design-system/palettes/archera-palette';
+import { color, elevation } from '@archera/design-system/tokens';
 import KpiSection from './KpiSection';
 import ServiceCard from './ServiceCard';
 import BriefingOverlay from './BriefingOverlay';

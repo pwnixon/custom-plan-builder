@@ -1,5 +1,5 @@
 import { Box, Stack, Typography } from '@mui/material';
-import { color } from '../_template/tokens';
+import { color } from '@archera/design-system/tokens';
 
 // Shared popover body — rendered inside a MUI Popover's Paper (which provides the
 // surface, elevation, and radius). eyebrow (type) over an h6 name, one or more

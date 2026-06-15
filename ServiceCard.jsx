@@ -4,8 +4,8 @@ import {
   ToggleButton, ToggleButtonGroup, LinearProgress, Divider, Icon as MuiIcon,
 } from '@mui/material';
 import { alpha } from '@mui/material/styles';
-import palette from '../_template/palettes/archera-palette';
-import { color, semantic, elevation } from '../_template/tokens';
+import palette from '@archera/design-system/palettes/archera-palette';
+import { color, semantic, elevation } from '@archera/design-system/tokens';
 import InfoPopover from './InfoPopover';
 import HoverPopover from './HoverPopover';
 

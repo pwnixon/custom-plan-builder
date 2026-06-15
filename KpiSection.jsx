@@ -4,8 +4,8 @@ import {
   DialogActions, Button, Chip, Checkbox, FormControlLabel, Icon as MuiIcon,
 } from '@mui/material';
 import { alpha } from '@mui/material/styles';
-import palette from '../_template/palettes/archera-palette';
-import { color, semantic } from '../_template/tokens';
+import palette from '@archera/design-system/palettes/archera-palette';
+import { color, semantic } from '@archera/design-system/tokens';
 
 // Selection highlight — ui-primary light at 20% opacity
 const selectedBg = alpha(palette.uiPrimary[50], 0.2);
