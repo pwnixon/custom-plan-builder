@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { Box, Stack, Typography, Button, Link, Fade, Icon as MuiIcon } from '@mui/material';
 import { alpha } from '@mui/material/styles';
 import palette from '@archera/design-system/palettes/archera-palette';
-import { semantic } from '@archera/design-system/tokens';
 import { ANALYSIS, COVERAGE_TARGET, fmtMoney, fmtPct } from './data';
 
 // First-run analysis briefing — shown only when `overview.has_actioned_plan` is false.
