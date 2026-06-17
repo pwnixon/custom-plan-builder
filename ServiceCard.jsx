@@ -542,25 +542,29 @@ function InstanceRow({ instance, selections, setSelection, visibleTermIds }) {
 }
 
 // ─── Header metric "stat" — NEW Design System ThumbStat (node 2016:1201) ────
-// Outlined pill: label left, bold value right, no icon. Per-metric color kept on
-// the value and a tinted border.
-function HeaderMetricCard({ label, value, accent }) {
+// Outlined pill (grey 2px border, rounded-8, px20/py16): label left, bold value
+// right with an optional smaller "/mo" annotation. No icon. Per-metric color is
+// kept on the value only.
+function HeaderMetricCard({ label, value, accent, annotation }) {
   return (
     <Stack
       direction="row"
       alignItems="center"
       spacing={1.5}
       sx={{
-        border: `2px solid ${alpha(accent, 0.45)}`,
+        border: `2px solid ${alpha(palette.text.secondary, 0.4)}`,
         borderRadius: 1,
         px: 2.5,
-        py: 1.5,
+        py: 2,
         bgcolor: palette.surface,
-        minWidth: 156,
+        minWidth: 168,
       }}
     >
       <Typography variant="body3" color="text.secondary" sx={{ flex: 1 }} noWrap>{label}</Typography>
-      <Typography variant="body3" sx={{ fontWeight: 700, color: accent, flexShrink: 0 }}>{value}</Typography>
+      <Stack direction="row" alignItems="baseline" spacing={0.25} sx={{ flexShrink: 0 }}>
+        <Typography variant="body3" sx={{ fontWeight: 700, color: accent }}>{value}</Typography>
+        {annotation && <Typography variant="caption" color="text.secondary">{annotation}</Typography>}
+      </Stack>
     </Stack>
   );
 }
@@ -653,7 +657,8 @@ export default function ServiceCard({ service, selections, setSelection, setServ
           />
           <HeaderMetricCard
             label="Savings"
-            value={`${fmtMoney(m.savingsMo)}/mo`}
+            value={fmtMoney(m.savingsMo)}
+            annotation="/mo"
             accent={semantic.success.main}
           />
         </Stack>
