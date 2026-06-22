@@ -618,7 +618,7 @@ export const KPI_CATALOG = [
     group: 'Essentials',
     icon: 'event_available',
     unit: '',
-    desc: 'Weighted average time until commitment savings exceed cost.',
+    desc: 'The time after which savings surpass the remaining commitment.',
     get: (m) => ({
       current: '—',
       projected: fmtDays(m.breakevenDays),
@@ -806,6 +806,27 @@ export const KPI_CATALOG = [
       good: true,
     }),
   },
+];
+
+// ─── Plan-view KPIs ──────────────────────────────────────────────────────────
+// The plan-forward Commitment Planner shows a fixed, non-configurable trio:
+// coverage, breakeven, and upfront. Upfront is plan-view-only (not in the builder's
+// KPI library) and is always $0 — Guaranteed Commitments carry no upfront payment.
+export const UPFRONT_KPI = {
+  id: 'upfront',
+  label: 'Upfront Payment',
+  noun: 'Upfront Payment',
+  group: 'Finance',
+  icon: 'payments',
+  unit: '',
+  desc: 'Guaranteed Commitments require no upfront — nothing is due today.',
+  get: () => ({ current: '$0', projected: '$0', delta: 'none required', good: true }),
+};
+
+export const PLAN_KPIS = [
+  KPI_CATALOG.find((k) => k.id === 'coverage'),
+  KPI_CATALOG.find((k) => k.id === 'breakeven'),
+  UPFRONT_KPI,
 ];
 
 export const DEFAULT_FEATURED = ['coverage', 'monthlySavings', 'uncoveredSpend', 'breakeven'];

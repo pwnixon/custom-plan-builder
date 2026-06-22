@@ -807,7 +807,7 @@ function ServiceAggregateRow({ service, infraSrc, serviceTerm, allIncluded, none
 
 // ─── Service card ────────────────────────────────────────────────────────────
 
-export default function ServiceCard({ service, selections, setCommitmentTerm, setServiceTerm, visibleTermIds, resourceQuery, planView = false }) {
+export default function ServiceCard({ service, selections, setCommitmentTerm, setServiceTerm, visibleTermIds, resourceQuery, planView = false, compareMode = false }) {
   const m = serviceMetrics(service, selections);
   const commitments = serviceCommitments(service);
 
@@ -819,10 +819,24 @@ export default function ServiceCard({ service, selections, setCommitmentTerm, se
     ? includedTerms[0]
     : null;
 
-  // Collapse the section when the service drops out of the plan; reopen when it
-  // comes back. The chevron reopens it manually at any time.
-  const [expanded, setExpanded] = useState(!noneIncluded);
-  useEffect(() => { setExpanded(!noneIncluded); }, [noneIncluded]);
+  // Plan-view header KPIs are color-coded independently. Coverage by health:
+  // excluded → error, under-covered → warning, otherwise success. Savings is green
+  // when there's any, neutral grey at $0 (no savings is a neutral fact, not an alarm).
+  const COVERAGE_WARN = 0.6;
+  const coverageColor = noneIncluded
+    ? semantic.error.main
+    : m.projectedCoverage < COVERAGE_WARN
+      ? semantic.warning.main
+      : semantic.success.main;
+  const savingsColor = m.savingsMo > 0 ? semantic.success.main : palette.text.secondary;
+
+  // Plan view: the page-level "Compare terms" switch (compareMode) bulk-expands every
+  // card; default off → all closed, so the comparison grid is opt-in and never
+  // overwhelms. The chevron still toggles an individual card between switch changes.
+  // The builder collapses a card only when its service drops out of the plan.
+  const [expanded, setExpanded] = useState(planView ? compareMode : !noneIncluded);
+  useEffect(() => { if (planView) setExpanded(compareMode); }, [planView, compareMode]);
+  useEffect(() => { if (!planView) setExpanded(!noneIncluded); }, [noneIncluded, planView]);
 
   // Granularity: per line item (default) or one term for the whole service.
   const [view, setView] = useState('commitment');
@@ -845,7 +859,7 @@ export default function ServiceCard({ service, selections, setCommitmentTerm, se
         <Box component="img" src={SERVICE_ICON[service.id]} alt="" sx={{ width: 38, height: 38, objectFit: 'contain', flexShrink: 0 }} />
         {/* ds-audit-ignore-start — literal header type sizes per Figma node 151:15296 */}
         <Box sx={{ flex: 1, minWidth: 0 }}>
-          <Typography sx={{ fontSize: 20, lineHeight: 1.2 }}>
+          <Typography variant="h4">
             <Box component="span" sx={{ fontWeight: 500, color: palette.text.primary }}>{service.name}</Box>
             <Box component="span" sx={{ fontWeight: 400, color: palette.text.secondary }}>{`  |  ${service.category}`}</Box>
           </Typography>
@@ -856,30 +870,68 @@ export default function ServiceCard({ service, selections, setCommitmentTerm, se
             {` commitment${commitments.length === 1 ? '' : 's'}`}
           </Typography>
         </Box>
-        <Stack direction="row" spacing={2} alignItems="center">
-          <Box sx={{ textAlign: 'right' }}>
-            <Typography sx={{ fontSize: 14, fontWeight: 500, letterSpacing: '0.15px', color: palette.text.secondary }}>Net Monthly Savings</Typography>
-            <Stack direction="row" spacing={0.5} alignItems="baseline" justifyContent="flex-end">
-              <Typography sx={{ fontSize: 24, fontWeight: 700, color: palette.text.primary }}>{fmtMoney(m.savingsMo)}</Typography>
-              <Typography sx={{ fontSize: 16, fontWeight: 500, color: palette.text.secondary }}>/mo</Typography>
+        {planView ? (
+          // Plan view: two KPIs (Coverage, Net Monthly Savings) styled like the
+          // plan-section KPI cards (plan-colored icon tile + h5 label + h2 value),
+          // without the card border/padding, separated by a divider.
+          <Stack direction="row" spacing={3} alignItems="center">
+            <Stack direction="row" spacing={1.5} alignItems="center">
+              <Box sx={{ width: 40, height: 40, borderRadius: 2, flexShrink: 0, bgcolor: alpha(coverageColor, 0.12), display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <MuiIcon baseClassName="material-icons-outlined" sx={{ fontSize: 28, color: coverageColor }}>verified_user</MuiIcon>
+              </Box>
+              <Box>
+                <Typography variant="h6">Coverage</Typography>
+                <Typography variant="h3" sx={{ fontWeight: 700, color: coverageColor }}>{fmtPct(m.projectedCoverage)}</Typography>
+              </Box>
             </Stack>
-          </Box>
-          <Box sx={{ width: 48, height: 48, borderRadius: '8px', flexShrink: 0, bgcolor: alpha(semantic.success.main, 0.12), display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <MuiIcon baseClassName="material-icons-outlined" sx={{ fontSize: 28, color: semantic.success.main }}>savings</MuiIcon>
-          </Box>
-        </Stack>
+            <Divider orientation="vertical" flexItem />
+            <Stack direction="row" spacing={1.5} alignItems="center">
+              <Box sx={{ width: 40, height: 40, borderRadius: 2, flexShrink: 0, bgcolor: alpha(savingsColor, 0.12), display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <MuiIcon baseClassName="material-icons-outlined" sx={{ fontSize: 28, color: savingsColor }}>savings</MuiIcon>
+              </Box>
+              <Box>
+                <Typography variant="h6">Net Monthly Savings</Typography>
+                <Stack direction="row" spacing={0.5} alignItems="baseline">
+                  <Typography variant="h3" sx={{ fontWeight: 700, color: savingsColor }}>{fmtMoney(m.savingsMo)}</Typography>
+                  <Typography variant="body3" color="text.secondary">/mo</Typography>
+                </Stack>
+              </Box>
+            </Stack>
+          </Stack>
+        ) : (
+          <Stack direction="row" spacing={2} alignItems="center">
+            <Box sx={{ textAlign: 'right' }}>
+              <Typography sx={{ fontSize: 14, fontWeight: 500, letterSpacing: '0.15px', color: palette.text.secondary }}>Net Monthly Savings</Typography>
+              <Stack direction="row" spacing={0.5} alignItems="baseline" justifyContent="flex-end">
+                <Typography sx={{ fontSize: 24, fontWeight: 700, color: palette.text.primary }}>{fmtMoney(m.savingsMo)}</Typography>
+                <Typography sx={{ fontSize: 16, fontWeight: 500, color: palette.text.secondary }}>/mo</Typography>
+              </Stack>
+            </Box>
+            <Box sx={{ width: 48, height: 48, borderRadius: '8px', flexShrink: 0, bgcolor: alpha(semantic.success.main, 0.12), display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <MuiIcon baseClassName="material-icons-outlined" sx={{ fontSize: 28, color: semantic.success.main }}>savings</MuiIcon>
+            </Box>
+          </Stack>
+        )}
         {/* ds-audit-ignore-end */}
-        <Tooltip title={expanded ? 'Collapse commitments' : 'Expand commitments'}>
-          <IconButton size="small" onClick={() => setExpanded((e) => !e)}>
-            <MuiIcon sx={{ fontSize: 22 }}>{expanded ? 'expand_less' : 'expand_more'}</MuiIcon>
-          </IconButton>
-        </Tooltip>
+        {/* Plan view: the chevron only appears once "Compare terms" is on — until
+            then the card is a summary and the page-level switch is the sole way in.
+            Builder always shows it. */}
+        {(!planView || compareMode) && (
+          <Tooltip title={expanded ? 'Collapse commitments' : 'Expand commitments'}>
+            <IconButton size="small" onClick={() => setExpanded((e) => !e)}>
+              <MuiIcon sx={{ fontSize: 22 }}>{expanded ? 'expand_less' : 'expand_more'}</MuiIcon>
+            </IconButton>
+          </Tooltip>
+        )}
       </Stack>
 
-      {/* Coverage bar stays visible even when the card is minimized */}
-      <Box sx={{ px: 2, pb: 1.5 }}>
-        <CoverageBar current={m.currentCoverage} projected={m.projectedCoverage} target={COVERAGE_TARGET} />
-      </Box>
+      {/* Coverage bar stays visible even when the card is minimized (builder only —
+          plan view surfaces coverage as a header KPI instead) */}
+      {!planView && (
+        <Box sx={{ px: 2, pb: 1 }}>
+          <CoverageBar current={m.currentCoverage} projected={m.projectedCoverage} target={COVERAGE_TARGET} />
+        </Box>
+      )}
 
       <Collapse in={expanded || Boolean(resourceQuery)}>
         {/* Comparison table */}

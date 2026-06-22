@@ -16,6 +16,11 @@ const CARD_TONE = {
   balanced:    { grad: `linear-gradient(115deg, ${bp[900]} 0%, ${bp[900]} 24%, ${bt[800]} 66%, ${bt[600]} 100%)`, status: bt[600], statusDark: bt[800], termValue: bt[700], termLabel: bt[900] },
   custom:      { grad: `linear-gradient(115deg, ${bp[900]} 0%, ${bp[800]} 30%, ${bs[800]} 70%, ${bs[600]} 100%)`, status: bs[700], statusDark: bs[800], termValue: bs[700], termLabel: bs[900] },
 };
+// The active plan's signature color — used to tie related surfaces (e.g. the plan
+// KPIs) back to the plan, so they read as "this plan's metrics" not generic ones.
+// Mirrors the card's status color; falls back to Recommended for any unmapped tone.
+export const planColor = (tone) => (CARD_TONE[tone] || CARD_TONE.recommended).status;
+
 // Cross-fade the card body when it swaps between active (tiles) and inactive
 // (rows) layouts, so the width change isn't jarring (no reflow animation).
 const FADE_SX = { animation: 'scFade 0.22s ease', '@keyframes scFade': { from: { opacity: 0 }, to: { opacity: 1 } } };
@@ -52,7 +57,7 @@ function MetricTile({ value, valueColor, label, labelColor, desc }) {
           <Typography sx={{ fontSize: 16, fontWeight: 500, lineHeight: 1.25, color: labelColor }}>{label}</Typography>
           <InfoIcon size={20} sx={{ color: labelColor }} />
         </Stack>
-        {desc && <Typography variant="body2" sx={{ color: palette.text.primary, mt: 0.5 }}>{desc}</Typography>}
+        {desc && <Typography variant="body1" sx={{ color: palette.text.primary, mt: 0.5 }}>{desc}</Typography>}
       </Box>
     </Box>
   );

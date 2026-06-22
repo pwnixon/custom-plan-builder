@@ -1,32 +1,30 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
-  Box, Stack, Typography, Button, Chip, Checkbox, FormControlLabel, Tooltip,
+  Box, Stack, Typography, Button, Chip, Checkbox, FormControlLabel, Tooltip, Switch, Collapse,
   Snackbar, Alert, Divider, Dialog, DialogTitle, DialogContent, DialogActions,
 } from '@mui/material';
 import { alpha } from '@mui/material/styles';
 import AppShell from '@archera/design-system/AppShell';
 import palette from '@archera/design-system/palettes/archera-palette';
 import { color, semantic, elevation } from '@archera/design-system/tokens';
-import KpiSection from './KpiSection';
+import PlanKpiSection from './PlanKpiSection';
 import ServiceCard from './ServiceCard';
-import StrategyCard from './StrategyCard';
+import StrategyCard, { planColor } from './StrategyCard';
 import CommitmentIcon from './CommitmentIcon';
 import { SERVICE_ICON } from './serviceIcons';
 import BriefingOverlay from './BriefingOverlay';
 import {
   SERVICES, TERMS, TERM_ORDER, TERM_LENGTHS, PRESETS, defaultSelections, applyPreset, detectPlan,
-  pageMetrics, DEFAULT_FEATURED, fmtMoney, fmtPct, KPI_CATALOG,
+  pageMetrics, PLAN_KPIS, fmtMoney, fmtPct,
   serviceCommitments, aggregateOption, commitmentTerm, planCommitmentCount, planSummary,
 } from './data';
-
-const kpiById = Object.fromEntries(KPI_CATALOG.map((k) => [k.id, k]));
 
 function SectionHeader({ title, description, action }) {
   return (
     <Stack direction="row" alignItems="flex-start" spacing={2}>
       <Box sx={{ flex: 1 }}>
         <Typography variant="h3" sx={{ mb: 0.5 }}>{title}</Typography>
-        <Typography variant="body1" color="text.secondary">{description}</Typography>
+        {description && <Typography variant="body1" color="text.secondary">{description}</Typography>}
       </Box>
       {action}
     </Stack>
@@ -45,9 +43,6 @@ function deriveVisibleTerms(lengths, types) {
     return TERMS[t].guaranteed ? types.includes('guaranteed') : types.includes('standard');
   });
 }
-
-// Smooth easing for the plan-card grid width transition.
-const EMPHASIZED = 'cubic-bezier(0.4, 0, 0.2, 1)';
 
 // ─── Review & apply modal ────────────────────────────────────────────────────
 // Plan summary (savings / coverage / count) over a condensed line-item table,
@@ -166,9 +161,10 @@ export default function PlanView() {
       return [...v, type];
     });
   };
-  const [featured, setFeatured] = useState(DEFAULT_FEATURED);
-  const [kpiLibOpen, setKpiLibOpen] = useState(false);
   const [savedToast, setSavedToast] = useState(false);
+  // Comparison is opt-in in the plan view: off (default) keeps cards collapsed to
+  // plan summaries; on reveals the term/type controls and expands every card.
+  const [compare, setCompare] = useState(false);
   const [customModalOpen, setCustomModalOpen] = useState(false);
   const [reviewOpen, setReviewOpen] = useState(false);
   const [customToast, setCustomToast] = useState(false);
@@ -269,8 +265,8 @@ export default function PlanView() {
   return (
     <AppShell breadcrumb="Cost Optimization" pageName="Commitment Planner" provider="AWS">
       <Box sx={{ maxWidth: 1280, mx: 'auto', width: '100%' }}>
-        {/* #1 — condensed sticky header (plan name + featured KPI values) that appears
-            once the plan + KPI sections have scrolled out of view. */}
+        {/* #1 — condensed sticky header (plan name + the three plan KPI values) that
+            appears once the plan + KPI sections have scrolled out of view. */}
         <Box
           sx={{
             position: 'sticky', top: 0, zIndex: 20,
@@ -287,12 +283,10 @@ export default function PlanView() {
             <Typography variant="subtitle2" sx={{ textTransform: 'none', flexShrink: 0 }}>{activePlanName}</Typography>
             <Divider orientation="vertical" flexItem />
             <Stack direction="row" spacing={3} sx={{ overflowX: 'auto' }}>
-              {featured.map((id) => {
-                const k = kpiById[id];
-                if (!k) return null;
+              {PLAN_KPIS.map((k) => {
                 const vv = k.get(metrics);
                 return (
-                  <Stack key={id} direction="row" spacing={0.5} alignItems="baseline" sx={{ flexShrink: 0 }}>
+                  <Stack key={k.id} direction="row" spacing={0.5} alignItems="baseline" sx={{ flexShrink: 0 }}>
                     <Typography variant="caption" color="text.secondary" noWrap>{k.label}</Typography>
                     <Typography variant="caption" sx={{ fontWeight: 700 }} noWrap>{vv.projected}{k.unit}</Typography>
                   </Stack>
@@ -303,6 +297,8 @@ export default function PlanView() {
         </Box>
 
         <Stack spacing={6} sx={{ width: '100%' }}>
+        {/* Plan cards + their KPIs sit tighter together (12px) than the 48px gap down to coverage. */}
+        <Stack spacing={1.5}>
         {/* Plan tabs — the active plan is the wide card (metric tiles); the rest are
             compact. Width swaps instantly on selection (no animated reflow). */}
         <Box
@@ -353,81 +349,99 @@ export default function PlanView() {
           })()}
         </Box>
 
-        {/* KPI strip (ref tracks when it scrolls past, to toggle the sticky header) */}
+        {/* KPI strip (ref tracks when it scrolls past, to toggle the sticky header).
+            Plan view = a fixed trio (coverage / breakeven / upfront), not the builder's
+            configurable library. */}
         <Box ref={kpiRef}>
-          <KpiSection
-            planName={activePlanName}
-            metrics={metrics}
-            featured={featured}
-            setFeatured={setFeatured}
-            libOpen={kpiLibOpen}
-            setLibOpen={setKpiLibOpen}
-          />
+          <PlanKpiSection metrics={metrics} tone={activePlan} />
         </Box>
+        </Stack>
 
         {/* Commitment coverage — one section (header, filters, per-service cards) at the
-            tighter 20px internal spacing; 48px separates it from the KPI section above. */}
-        <Stack spacing={2.5}>
+            tighter 20px internal spacing; 48px separates it from the plan/KPI section above. */}
+        <Stack spacing={2}>
+        {/* Header + compare toggle grouped tightly (4px), separate from the 16px
+            gap down to the service cards. */}
+        <Stack spacing={0.5}>
         <SectionHeader
           title={(
             <>
               {activePlanName} Commitment Coverage
               {includedTermLabels.length > 0 && (
-                <Box component="span" sx={{ color: 'text.secondary', fontWeight: 400 }}>: {includedTermLabels.join(' · ')}</Box>
+                <Box component="span" sx={{ color: planColor(activePlan), fontWeight: 400 }}>: {includedTermLabels.join(' · ')}</Box>
               )}
             </>
           )}
-          description="Reservable infrastructure grouped into commitments by service. Pick a term per commitment — Guaranteed commitments include Archera's buyback if usage drops; native terms carry full lock-in risk. Expand a commitment to see the resources it covers. Uncovered resources are paying full on-demand rates."
         />
-        <Stack direction="row" alignItems="center" spacing={1} useFlexGap flexWrap="wrap">
-          <Typography variant="subtitle2" sx={{ textTransform: 'none' }}>Comparison term lengths:</Typography>
-          {TERM_LENGTHS.map((length) => (
-            <Tooltip key={length.id} title="Show or hide commitments at this term length across all resources.">
-              <FormControlLabel
-                control={
-                  <Checkbox
-                    size="small"
-                    checked={visibleLengths.includes(length.id)}
-                    onChange={() => toggleLength(length.id)}
+        {/* Comparison is opt-in: the switch names the feature (so it's discoverable),
+            reveals the term/type controls, and expands every card. The controls never
+            float without a grid beneath them, and the default view stays uncluttered. */}
+        <Box>
+          <Stack direction="row" alignItems="center" spacing={1.5} useFlexGap flexWrap="wrap">
+            <FormControlLabel
+              control={<Switch checked={compare} onChange={(e) => setCompare(e.target.checked)} />}
+              label={<Typography variant="subtitle2" sx={{ textTransform: 'none' }}>Compare terms</Typography>}
+              sx={{ mr: 0 }}
+            />
+            <Typography variant="body2" color="text.secondary">
+              {compare
+                ? 'Each commitment shows on-demand and every term side by side — pick the column that fits.'
+                : 'Weigh 30-day, 1-year and longer terms side by side before you commit. Off by default.'}
+            </Typography>
+          </Stack>
+          <Collapse in={compare}>
+            <Stack direction="row" alignItems="center" spacing={1} useFlexGap flexWrap="wrap" sx={{ mt: 1.5 }}>
+              <Typography variant="subtitle2" sx={{ textTransform: 'none' }}>Comparison term lengths:</Typography>
+              {TERM_LENGTHS.map((length) => (
+                <Tooltip key={length.id} title="Show or hide commitments at this term length across all resources.">
+                  <FormControlLabel
+                    control={
+                      <Checkbox
+                        size="small"
+                        checked={visibleLengths.includes(length.id)}
+                        onChange={() => toggleLength(length.id)}
+                      />
+                    }
+                    label={<Typography variant="body2">{length.label}</Typography>}
+                    sx={{ mr: 0.5 }}
                   />
-                }
-                label={<Typography variant="body2">{length.label}</Typography>}
-                sx={{ mr: 0.5 }}
-              />
-            </Tooltip>
-          ))}
-          <Divider orientation="vertical" flexItem sx={{ mx: 0.5 }} />
-          <Typography variant="subtitle2" sx={{ textTransform: 'none' }}>Comparison types:</Typography>
-          <Tooltip title="Archera-insured commitments. If usage drops, Archera buys back unused capacity and pays the shortfall — your downside is $0.">
-            <FormControlLabel
-              control={
-                <Checkbox
-                  size="small"
-                  checked={visibleTypes.includes('guaranteed')}
-                  onChange={() => toggleType('guaranteed')}
+                </Tooltip>
+              ))}
+              <Divider orientation="vertical" flexItem sx={{ mx: 0.5 }} />
+              <Typography variant="subtitle2" sx={{ textTransform: 'none' }}>Comparison types:</Typography>
+              <Tooltip title="Archera-insured commitments. If usage drops, Archera buys back unused capacity and pays the shortfall — your downside is $0.">
+                <FormControlLabel
+                  control={
+                    <Checkbox
+                      size="small"
+                      checked={visibleTypes.includes('guaranteed')}
+                      onChange={() => toggleType('guaranteed')}
+                    />
+                  }
+                  label={<Typography variant="body2">Guaranteed</Typography>}
+                  sx={{ mr: 0.5 }}
                 />
-              }
-              label={<Typography variant="body2">Guaranteed</Typography>}
-              sx={{ mr: 0.5 }}
-            />
-          </Tooltip>
-          <Tooltip title="Native cloud commitments (RI, SP, CUD). No buyback — if usage drops, you keep paying for unused capacity until the term ends.">
-            <FormControlLabel
-              control={
-                <Checkbox
-                  size="small"
-                  checked={visibleTypes.includes('standard')}
-                  onChange={() => toggleType('standard')}
+              </Tooltip>
+              <Tooltip title="Native cloud commitments (RI, SP, CUD). No buyback — if usage drops, you keep paying for unused capacity until the term ends.">
+                <FormControlLabel
+                  control={
+                    <Checkbox
+                      size="small"
+                      checked={visibleTypes.includes('standard')}
+                      onChange={() => toggleType('standard')}
+                    />
+                  }
+                  label={<Typography variant="body2">Standard</Typography>}
+                  sx={{ mr: 0.5 }}
                 />
-              }
-              label={<Typography variant="body2">Standard</Typography>}
-              sx={{ mr: 0.5 }}
-            />
-          </Tooltip>
-          <Box sx={{ flex: 1 }} />
+              </Tooltip>
+            </Stack>
+          </Collapse>
+        </Box>
         </Stack>
 
-        {/* Service cards */}
+        {/* Service cards — 8px between each */}
+        <Stack spacing={1}>
         {SERVICES.map((s) => (
           <ServiceCard
             key={s.id}
@@ -437,8 +451,10 @@ export default function PlanView() {
             setServiceTerm={setServiceTerm}
             visibleTermIds={visibleTermIds}
             planView
+            compareMode={compare}
           />
         ))}
+        </Stack>
 
         <Box sx={{ borderTop: `1px solid ${color.divider}`, pt: 2, pb: 4 }}>
           <Typography variant="caption" color="text.secondary">
