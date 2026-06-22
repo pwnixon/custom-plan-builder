@@ -11,10 +11,12 @@ import archeraMarkBlackSvg from './assets/archera-mark-black.svg';
 const bp = palette.brandPrimary;
 const bt = palette.brandTertiary;  // pink / salmon
 const bs = palette.brandSecondary; // light blue / cyan
+// Inactive cards get a soft tint from the same color family as their active gradient.
+const lightGrad = (p) => `linear-gradient(160deg, ${palette.surface} 0%, ${alpha(p[50], 0.45)} 100%)`;
 const CARD_TONE = {
-  recommended: { grad: `linear-gradient(115deg, ${bp[900]} 0%, ${bp[800]} 32%, ${bp[600]} 78%, ${bp[500]} 100%)`, status: bp[500], statusDark: bp[700], termValue: bp[700], termLabel: bp[900] },
-  balanced:    { grad: `linear-gradient(115deg, ${bp[900]} 0%, ${bp[900]} 24%, ${bt[800]} 66%, ${bt[600]} 100%)`, status: bt[600], statusDark: bt[800], termValue: bt[700], termLabel: bt[900] },
-  custom:      { grad: `linear-gradient(115deg, ${bp[900]} 0%, ${bp[800]} 30%, ${bs[800]} 70%, ${bs[600]} 100%)`, status: bs[700], statusDark: bs[800], termValue: bs[700], termLabel: bs[900] },
+  recommended: { grad: `linear-gradient(115deg, ${bp[900]} 0%, ${bp[800]} 32%, ${bp[600]} 78%, ${bp[500]} 100%)`, light: lightGrad(bp), status: bp[500], statusDark: bp[700], termValue: bp[700], termLabel: bp[900] },
+  balanced:    { grad: `linear-gradient(115deg, ${bp[900]} 0%, ${bp[900]} 24%, ${bt[800]} 66%, ${bt[600]} 100%)`, light: lightGrad(bt), status: bt[600], statusDark: bt[800], termValue: bt[700], termLabel: bt[900] },
+  custom:      { grad: `linear-gradient(115deg, ${bp[900]} 0%, ${bp[800]} 30%, ${bs[800]} 70%, ${bs[600]} 100%)`, light: lightGrad(bs), status: bs[700], statusDark: bs[800], termValue: bs[700], termLabel: bs[900] },
 };
 // The active plan's signature color — used to tie related surfaces (e.g. the plan
 // KPIs) back to the plan, so they read as "this plan's metrics" not generic ones.
@@ -24,7 +26,6 @@ export const planColor = (tone) => (CARD_TONE[tone] || CARD_TONE.recommended).st
 // Cross-fade the card body when it swaps between active (tiles) and inactive
 // (rows) layouts, so the width change isn't jarring (no reflow animation).
 const FADE_SX = { animation: 'scFade 0.22s ease', '@keyframes scFade': { from: { opacity: 0 }, to: { opacity: 1 } } };
-const cardLightGradient = `linear-gradient(160deg, ${palette.surface} 0%, ${alpha(palette.brandPrimary[50], 0.45)} 100%)`;
 const tileGradient = `linear-gradient(180deg, ${alpha(palette.neutral.white, 0.8)} 0%, ${palette.neutral.white} 100%)`;
 // ds-audit-ignore-next-line — Figma inactive-title neutral (#57575c) not a palette token
 const INACTIVE_TITLE = '#57575c';
@@ -140,7 +141,7 @@ export default function StrategyCard({
         '&:hover': { boxShadow: clickable ? elevation[4] : 'none' },
       }}
     >
-      <Box key="body-inactive" sx={{ flex: 1, minHeight: 0, background: cardLightGradient, px: 3, py: 4, display: 'flex', flexDirection: 'column', gap: 3, ...FADE_SX }}>
+      <Box key="body-inactive" sx={{ flex: 1, minHeight: 0, background: t.light, px: 3, py: 4, display: 'flex', flexDirection: 'column', gap: 3, ...FADE_SX }}>
         <Box sx={{ flex: 1 }}>
           <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 1 }}>
             {!isCustom && (

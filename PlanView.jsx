@@ -328,9 +328,13 @@ export default function PlanView() {
             );
           })}
           {(() => {
+            // Active custom plan shows its live savings; an inactive-but-saved custom
+            // plan shows its snapshot's savings; otherwise there's no custom plan yet.
             const sum = activePlan === 'custom'
               ? { savings: fmtMoney(metrics.savingsMo.projected), term: '—' }
-              : { savings: '—', term: '—' };
+              : hasCustomPlan && customSnapshot.current
+                ? { savings: fmtMoney(pageMetrics(customSnapshot.current).savingsMo.projected), term: '—' }
+                : { savings: '—', term: '—' };
             return (
               <StrategyCard
                 title="Custom Plan"
@@ -340,7 +344,12 @@ export default function PlanView() {
                 tone="custom"
                 savings={sum.savings}
                 term={sum.term}
-                onSelect={() => setCustomModalOpen(true)}
+                // Restore the saved custom plan if one exists; otherwise open the
+                // start-a-custom-plan modal.
+                onSelect={() => {
+                  if (hasCustomPlan && customSnapshot.current) setSelections(customSnapshot.current);
+                  else setCustomModalOpen(true);
+                }}
                 onApply={() => setReviewOpen(true)}
                 onSave={() => setSavedToast(true)}
                 onConfigure={() => setCustomModalOpen(true)}

@@ -166,7 +166,6 @@ export default function BuilderView() {
   const [featured, setFeatured] = useState(DEFAULT_FEATURED);
   const [kpiLibOpen, setKpiLibOpen] = useState(false);
   const [savedToast, setSavedToast] = useState(false);
-  const [customModalOpen, setCustomModalOpen] = useState(false);
   const [reviewOpen, setReviewOpen] = useState(false);
   const [customToast, setCustomToast] = useState(false);
   // #1 — fixed condensed header once the plan + KPI sections scroll out of view.
@@ -185,17 +184,6 @@ export default function BuilderView() {
   // Distinct commitment terms actually selected in the plan (TERM_ORDER for stable order).
   const includedTermIds = new Set(Object.values(selections).filter(Boolean));
   const includedTermLabels = TERM_ORDER.filter((t) => includedTermIds.has(t)).map((t) => TERMS[t].label);
-
-  // Keep the latest custom state so clicking the Custom tab can restore it
-  // after switching to a predefined plan.
-  const customSnapshot = useRef(null);
-  const [hasCustomPlan, setHasCustomPlan] = useState(false);
-  useEffect(() => {
-    if (activePlan === 'custom') {
-      customSnapshot.current = selections;
-      setHasCustomPlan(true);
-    }
-  }, [activePlan, selections]);
 
   // Info snackbar the moment edits turn a predefined plan into a custom plan.
   const prevPlan = useRef(activePlan);
@@ -231,14 +219,6 @@ export default function BuilderView() {
     setVisibleTypes(['guaranteed', 'standard']);
   };
 
-  const clearAll = () => {
-    setSelections((s) => {
-      const next = {};
-      Object.keys(s).forEach((k) => { next[k] = null; });
-      return next;
-    });
-  };
-
   // Show the condensed header once the bottom of the KPI section scrolls above the
   // top of the scroll container (AppShell's <main>).
   useEffect(() => {
@@ -255,13 +235,6 @@ export default function BuilderView() {
     onScroll();
     return () => scroller.removeEventListener('scroll', onScroll);
   }, []);
-
-  // Custom card → modal. The primary path is to start from a plan and edit (which
-  // becomes a custom plan automatically); this action builds a blank plan instead.
-  const startBlank = () => {
-    clearAll();                  // nothing preselected → KPIs zero until the user selects
-    setCustomModalOpen(false);
-  };
 
   return (
     <AppShell breadcrumb="Cost Optimization" pageName="Commitment Planner" provider="AWS">
@@ -399,23 +372,6 @@ export default function BuilderView() {
       </Box>
 
       {briefing && <BriefingOverlay metrics={metrics} onDismiss={() => setBriefing(false)} />}
-
-      {/* Custom plan starting point */}
-      <Dialog open={customModalOpen} onClose={() => setCustomModalOpen(false)} maxWidth="sm" fullWidth>
-        <DialogTitle>Start your custom plan</DialogTitle>
-        <DialogContent>
-          <Typography variant="body1" color="text.secondary">
-            The quickest path is to start from a plan — pick Recommended or Balanced, then adjust any
-            commitment; your edits automatically become a custom plan. Prefer a clean start? Create a
-            blank plan with nothing preselected and build your coverage from the ground up, one
-            commitment at a time.
-          </Typography>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setCustomModalOpen(false)}>Cancel</Button>
-          <Button variant="contained" onClick={startBlank}>Create from a Blank Plan</Button>
-        </DialogActions>
-      </Dialog>
 
       <ReviewApplyModal
         open={reviewOpen}
