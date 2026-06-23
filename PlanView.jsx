@@ -449,8 +449,8 @@ export default function PlanView() {
         </Box>
         </Stack>
 
-        {/* Service cards — 8px between each */}
-        <Stack spacing={1}>
+        {/* Service cards — 16px between each */}
+        <Stack spacing={2}>
         {SERVICES.map((s) => (
           <ServiceCard
             key={s.id}
