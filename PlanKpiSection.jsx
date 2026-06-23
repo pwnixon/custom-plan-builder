@@ -20,7 +20,7 @@ function PlanKpiCard({ kpi, metrics, accent }) {
       sx={{
         bgcolor: palette.surface,
         border: `1px solid ${color.outlineBorder}`,
-        borderRadius: 4,
+        borderRadius: 2,
         p: 2,
       }}
     >
