@@ -31,6 +31,16 @@ const SCOL = 140; // plan-view summary column width
 const CHEV = 40;  // right-edge expand/collapse chevron column
 const HOVER_BG = alpha(palette.neutral.black, 0.03); // light row/header hover
 
+// Commitment "type" under the selected term: guaranteed → "30 Day GRI" / "1 Year GSP"
+// (brand primary); native → "1 Year" / "3 Year" (text.primary). null when excluded.
+const TERM_LENGTH = { 30: '30 Day', 365: '1 Year', 1095: '3 Year' };
+function commitmentType(commitment, termId) {
+  const term = TERMS[termId];
+  if (!term) return null;
+  const length = TERM_LENGTH[term.lockDays] || term.short;
+  return { label: term.guaranteed ? `${length} ${commitment.kind === 'sp' ? 'GSP' : 'GRI'}` : length, guaranteed: term.guaranteed };
+}
+
 // CSP brand colors — cloud-brand, not in Archera palette (mirrors AppShell PROVIDER constants)
 // text: brand orange darkened for readability on light backgrounds
 const CSP = { icon: '#FF9900', bg: '#fff3e0', text: '#C77700' }; // AWS
@@ -251,7 +261,7 @@ function CommitmentTableHeader({
       direction="row"
       spacing={1.5}
       alignItems="flex-end"
-      sx={{ px: 2, pt: 1, borderTop: `1px solid ${color.divider}`, bgcolor: palette.surface }}
+      sx={{ px: 2, pt: 2, borderTop: `1px solid ${color.divider}`, bgcolor: palette.surface }}
     >
       <Box sx={{ flex: 1, minWidth: COL.lead + COL.info, pb: 1 }}>
         {planView ? (
@@ -323,9 +333,9 @@ function CommitmentTableHeader({
 // Column labels for the per-commitment summary (shown when a plan-view card is
 // opened via "View" and Compare terms is off).
 function SummaryHeader() {
-  const cols = ['Net Savings/mo', 'Cost/mo', 'Breakeven', 'Resources'];
+  const cols = ['Type', 'Net Savings/mo', 'Cost/mo', 'Breakeven', 'Resources'];
   return (
-    <Stack direction="row" spacing={1.5} alignItems="flex-end" sx={{ px: 2, pt: 1, borderTop: `1px solid ${color.divider}`, bgcolor: palette.surface }}>
+    <Stack direction="row" spacing={1.5} alignItems="flex-end" sx={{ px: 2, pt: 2, borderTop: `1px solid ${color.divider}`, bgcolor: palette.surface }}>
       <Box sx={{ flex: 1, minWidth: COL.lead + COL.info, pb: 1 }}>
         <Stack direction="row" spacing={1.5}>
           <Box sx={{ width: COL.lead, flexShrink: 0 }} />
@@ -401,7 +411,7 @@ function SortHeader({ label, sortKey, sort, setSort, width }) {
         display: 'flex', alignItems: 'center', gap: 0.25, cursor: 'pointer', userSelect: 'none',
       }}
     >
-      <Typography variant="body2" color="text.secondary" sx={{ whiteSpace: 'nowrap' }}>{label}</Typography>
+      <Typography variant="h6" color="text.secondary" sx={{ whiteSpace: 'nowrap' }}>{label}</Typography>
       <MuiIcon sx={{ fontSize: 15, color: active ? palette.text.primary : palette.text.disabled }}>{icon}</MuiIcon>
     </Box>
   );
@@ -444,16 +454,16 @@ function ResourceTable({ instances, infraSrc, service, selections, pageSize = 5 
         }}
       >
       {/* Column headers */}
-      <Stack direction="row" spacing={1.5} alignItems="center" sx={{ px: 2, py: 1.25, borderBottom: `1px solid ${color.divider}` }}>
+      <Stack direction="row" spacing={1.5} alignItems="center" sx={{ px: 2, pt: 2, pb: 1, borderBottom: `1px solid ${color.divider}` }}>
         {/* Lead spacer so resource content lines up under the commitment name */}
         <Box sx={{ width: COL.lead, flexShrink: 0 }} />
         <SortHeader label="Resource" sortKey="name" sort={sort} setSort={setSort} />
-        <SortHeader label="Before Rate" sortKey="before" sort={sort} setSort={setSort} width={RCOL.rate} />
-        <SortHeader label="After Rate" sortKey="after" sort={sort} setSort={setSort} width={RCOL.rate} />
+        <SortHeader label="Before" sortKey="before" sort={sort} setSort={setSort} width={RCOL.rate} />
+        <SortHeader label="After" sortKey="after" sort={sort} setSort={setSort} width={RCOL.rate} />
         <SortHeader label="Net Savings/mo" sortKey="savings" sort={sort} setSort={setSort} width={RCOL.savings} />
         <SortHeader label="Cost/mo" sortKey="cost" sort={sort} setSort={setSort} width={RCOL.cost} />
         <SortHeader label="Coverage" sortKey="covered" sort={sort} setSort={setSort} width={RCOL.covered} />
-        <Typography variant="body2" color="text.secondary" sx={{ width: RCOL.usage, flexShrink: 0, whiteSpace: 'nowrap' }}>Historical Usage</Typography>
+        <Typography variant="h6" color="text.secondary" sx={{ width: RCOL.usage, flexShrink: 0, whiteSpace: 'nowrap' }}>Historical Usage</Typography>
       </Stack>
 
       {pageItems.map((r, idx) => (
@@ -477,8 +487,8 @@ function ResourceTable({ instances, infraSrc, service, selections, pageSize = 5 
             </Box>
           </Stack>
           </HoverPopover>
-          <Typography variant="body2" sx={{ width: RCOL.rate, flexShrink: 0, textAlign: 'right' }}>{fmtRate(r.beforeHr)}</Typography>
-          <Typography variant="body2" sx={{ width: RCOL.rate, flexShrink: 0, textAlign: 'right' }}>{fmtRate(r.afterHr)}</Typography>
+          <Typography variant="body2" sx={{ width: RCOL.rate, flexShrink: 0, textAlign: 'right' }}>{fmtRate(r.beforeHr)}/hr</Typography>
+          <Typography variant="body2" sx={{ width: RCOL.rate, flexShrink: 0, textAlign: 'right' }}>{fmtRate(r.afterHr)}/hr</Typography>
           <Typography
             variant="body2"
             sx={{ width: RCOL.savings, flexShrink: 0, textAlign: 'right', fontWeight: r.savings > 0 ? 600 : 400, color: r.savings > 0 ? semantic.success.dark : palette.text.secondary }}
@@ -644,7 +654,7 @@ function CommitmentRow({ commitment, service, infraSrc, selections, setCommitmen
       <Stack
         direction="row" spacing={1.5} alignItems="center"
         onClick={() => setOpen((o) => !o)}
-        sx={{ py: 1, px: 2, cursor: 'pointer', '&:hover': { bgcolor: HOVER_BG } }}
+        sx={{ py: 1.5, px: 2, cursor: 'pointer', '&:hover': { bgcolor: HOVER_BG } }}
       >
         {/* Lead: include/exclude (chevron moved to the right edge) */}
         <Stack direction="row" alignItems="center" sx={{ width: COL.lead, flexShrink: 0 }}>
@@ -689,8 +699,12 @@ function CommitmentRow({ commitment, service, infraSrc, selections, setCommitmen
             const sOpt = ct && ct !== 'mixed' ? aggregateOption(commitment.instances, ct) : null;
             const savings = sOpt ? sOpt.savingsMo : 0;
             const n = commitment.instances.length;
+            const type = commitmentType(commitment, ct);
             return (
               <Stack direction="row" spacing={1}>
+                <Typography variant="body1" sx={{ width: SCOL, flexShrink: 0, px: 1.5, textAlign: 'right', color: type?.guaranteed ? palette.brandPrimary[500] : palette.text.primary }}>
+                  {type ? type.label : '—'}
+                </Typography>
                 <Box sx={{ width: SCOL, flexShrink: 0, px: 1.5, textAlign: 'right' }}>
                   <Typography variant="h6" sx={{ color: savings > 0 ? semantic.success.dark : palette.text.secondary }}>
                     {savings > 0 ? '+' : ''}{fmtMoney(savings)}/mo

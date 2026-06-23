@@ -394,7 +394,7 @@ export default function PlanView() {
             />
             <Typography variant="body2" color="text.secondary">
               {compare
-                ? 'Each commitment shows on-demand and every term side by side — pick the column that fits.'
+                ? 'Each commitment shows every term side by side — pick the column that fits.'
                 : 'Weigh 30-day, 1-year and longer terms side by side before you commit. Off by default.'}
             </Typography>
           </Stack>
