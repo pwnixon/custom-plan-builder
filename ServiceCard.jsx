@@ -333,7 +333,13 @@ function CommitmentTableHeader({
 // Column labels for the per-commitment summary (shown when a plan-view card is
 // opened via "View" and Compare terms is off).
 function SummaryHeader() {
-  const cols = ['Type', 'Net Savings/mo', 'Cost/mo', 'Breakeven', 'Resources'];
+  const cols = [
+    { label: 'Type', align: 'left' },
+    { label: 'Net Savings/mo', align: 'right' },
+    { label: 'Cost/mo', align: 'right' },
+    { label: 'Breakeven', align: 'right' },
+    { label: 'Resources', align: 'right' },
+  ];
   return (
     <Stack direction="row" spacing={1.5} alignItems="flex-end" sx={{ px: 2, pt: 2, borderTop: `1px solid ${color.divider}`, bgcolor: palette.surface }}>
       <Box sx={{ flex: 1, minWidth: COL.lead + COL.info, pb: 1 }}>
@@ -344,7 +350,7 @@ function SummaryHeader() {
       </Box>
       <Stack direction="row" spacing={1} alignItems="flex-end">
         {cols.map((c) => (
-          <Typography key={c} variant="h6" color="text.secondary" sx={{ width: SCOL, flexShrink: 0, px: 1.5, pb: 1, textAlign: 'right' }}>{c}</Typography>
+          <Typography key={c.label} variant="h6" color="text.secondary" sx={{ width: SCOL, flexShrink: 0, px: 1.5, pb: 1, textAlign: c.align }}>{c.label}</Typography>
         ))}
       </Stack>
       <Box sx={{ width: CHEV, flexShrink: 0 }} />
@@ -397,46 +403,13 @@ function resourceRow(instance, selections) {
   };
 }
 
-function SortHeader({ label, sortKey, sort, setSort, width }) {
-  const active = sort.key === sortKey;
-  const icon = !active ? 'swap_vert' : (sort.dir === 'asc' ? 'arrow_upward' : 'arrow_downward');
-  const toggle = () => setSort((s) => (s.key === sortKey
-    ? { key: sortKey, dir: s.dir === 'asc' ? 'desc' : 'asc' }
-    : { key: sortKey, dir: sortKey === 'name' ? 'asc' : 'desc' }));
-  return (
-    <Box
-      onClick={toggle}
-      sx={{
-        ...(width ? { width, flexShrink: 0, justifyContent: 'flex-end' } : { flex: 1, justifyContent: 'flex-start' }),
-        display: 'flex', alignItems: 'center', gap: 0.25, cursor: 'pointer', userSelect: 'none',
-      }}
-    >
-      <Typography variant="h6" color="text.secondary" sx={{ whiteSpace: 'nowrap' }}>{label}</Typography>
-      <MuiIcon sx={{ fontSize: 15, color: active ? palette.text.primary : palette.text.disabled }}>{icon}</MuiIcon>
-    </Box>
-  );
-}
-
 // Reusable read-only resource table — sortable, searchable + paginated. Used by
 // both the commitment drill-down (a line item can cover thousands of resources)
 // and the service drill-down (all of the service's resources).
 function ResourceTable({ instances, infraSrc, service, selections, pageSize = 5 }) {
   const [page, setPage] = useState(1);
-  const [sort, setSort] = useState({ key: null, dir: 'desc' });
 
-  let view = instances.map((i) => resourceRow(i, selections));
-  if (sort.key) {
-    const acc = {
-      name: (r) => r.i.name, before: (r) => r.beforeHr, after: (r) => r.afterHr,
-      savings: (r) => r.savings, cost: (r) => r.cost, covered: (r) => r.covered,
-    }[sort.key];
-    view = [...view].sort((a, b) => {
-      const av = acc(a);
-      const bv = acc(b);
-      const c = typeof av === 'string' ? av.localeCompare(bv) : av - bv;
-      return sort.dir === 'asc' ? c : -c;
-    });
-  }
+  const view = instances.map((i) => resourceRow(i, selections));
   const pages = Math.max(1, Math.ceil(view.length / pageSize));
   const current = Math.min(page, pages);
   const pageItems = view.slice((current - 1) * pageSize, current * pageSize);
@@ -457,12 +430,12 @@ function ResourceTable({ instances, infraSrc, service, selections, pageSize = 5 
       <Stack direction="row" spacing={1.5} alignItems="center" sx={{ px: 2, pt: 2, pb: 1, borderBottom: `1px solid ${color.divider}` }}>
         {/* Lead spacer so resource content lines up under the commitment name */}
         <Box sx={{ width: COL.lead, flexShrink: 0 }} />
-        <SortHeader label="Resource" sortKey="name" sort={sort} setSort={setSort} />
-        <SortHeader label="Before" sortKey="before" sort={sort} setSort={setSort} width={RCOL.rate} />
-        <SortHeader label="After" sortKey="after" sort={sort} setSort={setSort} width={RCOL.rate} />
-        <SortHeader label="Net Savings/mo" sortKey="savings" sort={sort} setSort={setSort} width={RCOL.savings} />
-        <SortHeader label="Cost/mo" sortKey="cost" sort={sort} setSort={setSort} width={RCOL.cost} />
-        <SortHeader label="Coverage" sortKey="covered" sort={sort} setSort={setSort} width={RCOL.covered} />
+        <Typography variant="h6" color="text.secondary" sx={{ flex: 1, whiteSpace: 'nowrap' }}>Resource</Typography>
+        <Typography variant="h6" color="text.secondary" sx={{ width: RCOL.rate, flexShrink: 0, textAlign: 'right', whiteSpace: 'nowrap' }}>Before</Typography>
+        <Typography variant="h6" color="text.secondary" sx={{ width: RCOL.rate, flexShrink: 0, textAlign: 'right', whiteSpace: 'nowrap' }}>After</Typography>
+        <Typography variant="h6" color="text.secondary" sx={{ width: RCOL.savings, flexShrink: 0, textAlign: 'right', whiteSpace: 'nowrap' }}>Net Savings/mo</Typography>
+        <Typography variant="h6" color="text.secondary" sx={{ width: RCOL.cost, flexShrink: 0, textAlign: 'right', whiteSpace: 'nowrap' }}>Cost/mo</Typography>
+        <Typography variant="h6" color="text.secondary" sx={{ width: RCOL.covered, flexShrink: 0, textAlign: 'right', whiteSpace: 'nowrap' }}>Coverage</Typography>
         <Typography variant="h6" color="text.secondary" sx={{ width: RCOL.usage, flexShrink: 0, whiteSpace: 'nowrap' }}>Historical Usage</Typography>
       </Stack>
 
@@ -633,8 +606,10 @@ function ResourceDetailPopover({ instance, service, infraSrc }) {
 
 // ─── Commitment row ──────────────────────────────────────────────────────────
 
-function CommitmentRow({ commitment, service, infraSrc, selections, setCommitmentTerm, visibleTermIds, resourceQuery, hideOnDemand, planView, summary = false }) {
+function CommitmentRow({ commitment, service, infraSrc, selections, setCommitmentTerm, visibleTermIds, resourceQuery, hideOnDemand, planView, summary = false, serviceOpen = true }) {
   const [open, setOpen] = useState(false);
+  // Collapse the resource drill-down whenever the parent service card closes.
+  useEffect(() => { if (!serviceOpen) setOpen(false); }, [serviceOpen]);
   const ct = commitmentTerm(commitment, selections);
   const included = ct !== null;
   const ids = commitment.instances.map((i) => i.id);
@@ -702,7 +677,7 @@ function CommitmentRow({ commitment, service, infraSrc, selections, setCommitmen
             const type = commitmentType(commitment, ct);
             return (
               <Stack direction="row" spacing={1}>
-                <Typography variant="body1" sx={{ width: SCOL, flexShrink: 0, px: 1.5, textAlign: 'right', color: type?.guaranteed ? palette.brandPrimary[500] : palette.text.primary }}>
+                <Typography variant="body1" sx={{ width: SCOL, flexShrink: 0, px: 1.5, textAlign: 'left', color: type?.guaranteed ? palette.brandPrimary[500] : palette.text.primary }}>
                   {type ? type.label : '—'}
                 </Typography>
                 <Box sx={{ width: SCOL, flexShrink: 0, px: 1.5, textAlign: 'right' }}>
@@ -792,8 +767,9 @@ function CoverageBar({ current, projected, target }) {
 // One term decision for the whole service, applied across all its commitments.
 // Drill-down shows every resource in the service (searchable / paginated).
 
-function ServiceAggregateRow({ service, infraSrc, serviceTerm, allIncluded, noneIncluded, setServiceTerm, visibleTermIds, selections, resourceQuery, hideOnDemand }) {
+function ServiceAggregateRow({ service, infraSrc, serviceTerm, allIncluded, noneIncluded, setServiceTerm, visibleTermIds, selections, resourceQuery, hideOnDemand, serviceOpen = true }) {
   const [open, setOpen] = useState(false);
+  useEffect(() => { if (!serviceOpen) setOpen(false); }, [serviceOpen]);
   const allInst = service.instances;
   const pseudo = { instances: allInst, name: service.name };
   const costMo = allInst.reduce((a, i) => {
@@ -894,7 +870,7 @@ export default function ServiceCard({ service, selections, setCommitmentTerm, se
   // (shown while comparing) both drive this state; flipping Compare bulk-opens or
   // -closes, but the chevron can still collapse an individual card mid-comparison.
   const [planOpen, setPlanOpen] = useState(false);
-  useEffect(() => { if (planView) setPlanOpen(compareMode); }, [planView, compareMode]);
+  useEffect(() => { if (planView) setPlanOpen(compareMode && !noneIncluded); }, [planView, compareMode]);
   const open = planView ? planOpen : expanded;
   const showSummary = planView && !compareMode; // summary columns vs term comparison
 
@@ -930,7 +906,7 @@ export default function ServiceCard({ service, selections, setCommitmentTerm, se
             <Box component="span" sx={{ fontWeight: 500, color: palette.text.primary }}>{service.name}</Box>
             <Box component="span" sx={{ fontWeight: 400, color: palette.text.secondary }}>{`  |  ${service.category}`}</Box>
           </Typography>
-          <Typography sx={{ fontSize: 16, lineHeight: 1.5, color: palette.text.secondary, mt: 0.25 }}>
+          <Typography sx={{ fontSize: 16, lineHeight: 1.5, color: palette.text.secondary }}>
             <Box component="span" sx={{ fontWeight: 700 }}>{service.instances.length}</Box>
             {` resource${service.instances.length === 1 ? '' : 's'} covered by `}
             <Box component="span" sx={{ fontWeight: 700 }}>{commitments.length}</Box>
@@ -1028,6 +1004,7 @@ export default function ServiceCard({ service, selections, setCommitmentTerm, se
               selections={selections}
               resourceQuery={resourceQuery}
               hideOnDemand={planView}
+              serviceOpen={open}
             />
           ) : (
             commitments.map((c) => (
@@ -1043,6 +1020,7 @@ export default function ServiceCard({ service, selections, setCommitmentTerm, se
                 hideOnDemand={planView}
                 planView={planView}
                 summary={showSummary}
+                serviceOpen={open}
               />
             ))
           )}
