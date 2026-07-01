@@ -14,7 +14,7 @@ import stdSP from './assets/commitments/non-guaranteed-savings-plan.svg';
 //     bottom-right.
 // Type/glyph/color: release = purple arrow, rebate = green ↻$, non-guaranteed =
 // cloud-brand $.
-const BADGE = { release: relCommit, rebate: rebCommit, standard: stdCommit };
+export const BADGE = { release: relCommit, rebate: rebCommit, standard: stdCommit };
 const SP_ICON = { release: relSP, rebate: rebSP, standard: stdSP };
 
 // Per-style accent color (matches the SVG glyphs).

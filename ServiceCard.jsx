@@ -9,7 +9,7 @@ import palette from '@archera/design-system/palettes/archera-palette';
 import { color, semantic, elevation } from '@archera/design-system/tokens';
 import InfoPopover from './InfoPopover';
 import HoverPopover from './HoverPopover';
-import CommitmentIcon, { iconStyleFor } from './CommitmentIcon';
+import CommitmentIcon, { iconStyleFor, BADGE } from './CommitmentIcon';
 import { SERVICE_ICON } from './serviceIcons';
 import {
   TERMS, optionFor, serviceMetrics, sparkPoints, fmtMoney, fmtPct, fmtDays,
@@ -494,6 +494,24 @@ function ResourceTable({ instances, infraSrc, service, selections, pageSize = 5 
 // Hover detail mirroring the term popovers: the commitment icon + identity, then
 // key/value pairs for everything on the line item, each with a copy affordance.
 
+// Guarantee Type value: Release (brand primary) / Rebate (success) with the guarantee
+// logo; native or excluded terms read "Not Guaranteed".
+const GUARANTEE_META = {
+  release:  { label: 'Release',        color: palette.brandPrimary[700], badge: BADGE.release },
+  rebate:   { label: 'Rebate',         color: semantic.success.dark,     badge: BADGE.rebate },
+  standard: { label: 'Not Guaranteed', color: palette.text.secondary,    badge: null },
+};
+
+function GuaranteeValue({ style }) {
+  const g = GUARANTEE_META[style] || GUARANTEE_META.standard;
+  return (
+    <Stack direction="row" alignItems="center" spacing={0.5}>
+      {g.badge && <Box component="img" src={g.badge} alt="" sx={{ width: 16, height: 16 }} />}
+      <Typography variant="uiXsmall" sx={{ color: g.color }}>{g.label}</Typography>
+    </Stack>
+  );
+}
+
 function AccountBadge() {
   return (
     <Box
@@ -537,6 +555,12 @@ function CommitmentDetailPopover({ commitment, service, termId, infraSrc }) {
 
       {/* Key / value rows */}
       <Stack>
+        <Stack direction="row" alignItems="center" spacing={1} sx={{ py: 0.25, borderTop: `1px solid ${color.divider}` }}>
+          <Typography variant="uiXsmall" color="text.secondary" sx={{ width: 150, flexShrink: 0 }}>Guarantee Type:</Typography>
+          <Box sx={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: 0.75 }}>
+            <GuaranteeValue style={iconStyleFor(termId)} />
+          </Box>
+        </Stack>
         {detail.rows.map((r) => (
           <Stack key={r.label} direction="row" alignItems="center" spacing={1} sx={{ py: 0.25, borderTop: `1px solid ${color.divider}` }}>
             <Typography variant="uiXsmall" color="text.secondary" sx={{ width: 150, flexShrink: 0 }}>{r.label}:</Typography>
