@@ -424,7 +424,7 @@ export default function PtuPlanner() {
 
   return (
     <AppShell breadcrumb="Cost Optimization" pageName="Provisioned Throughput Planner" provider={csp} providers={CSP_KEYS} onProviderChange={(k) => { setCsp(k); setDrill(null); }}>
-      <Stack spacing={2.5} sx={{ maxWidth: 1280, mx: 'auto', width: '100%' }}>
+      <Stack spacing={2.5} sx={{ width: '100%' }}>
         <Stack direction="row" alignItems="flex-start" justifyContent="space-between" spacing={2}>
           <Box>
             <Typography variant="h3" sx={{ mb: 0.5 }}>{cfg.title}</Typography>

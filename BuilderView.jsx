@@ -246,7 +246,7 @@ export default function BuilderView() {
 
   return (
     <AppShell breadcrumb="Cost Optimization" pageName="Commitment Planner" provider="AWS">
-      <Box sx={{ maxWidth: 1280, mx: 'auto', width: '100%' }}>
+      <Box sx={{ width: '100%' }}>
         {/* #1 — condensed sticky header (plan name + featured KPI values) that appears
             once the plan + KPI sections have scrolled out of view. */}
         <Box
